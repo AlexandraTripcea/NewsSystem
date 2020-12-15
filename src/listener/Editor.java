@@ -1,4 +1,5 @@
 package listener;
+import java.util.Date;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -22,11 +23,17 @@ public class Editor implements EventListener {
 	@Subscribe
 	public void listen(EventContainer handler) {
 		if (handler.getEventType().equals(Action.READ)) {
-			noReaders++;
-			System.out.println("The number of readers has increased " + noReaders);
+			Optional<Article> a = articles
+					.stream()
+					.filter(article -> article.getTitle().equals(handler.getTitle()))
+					.findFirst();
+			if(a.isPresent()) {
+				noReaders++;
+				System.out.println("The number of readers has increased " + noReaders);
+			}
 		}
 	}
-
+	
 	public Article createArticle() {
 		System.out.println("Hello. So you want to create an article");
 
@@ -59,10 +66,10 @@ public class Editor implements EventListener {
 
 		if (article != null) {
 			System.out.println("title --- " + article.getTitle() + " --- ");
-
+			article.setModified(new Date(System.currentTimeMillis()));
+			EventBus eventBus = EventBusManager.getInstance();
 			while (true) {
 				System.out.println("What do you want to modify? (Press: T - title, C - close)");
-
 				Scanner whatToModify = new Scanner(System.in);
 				String what = whatToModify.nextLine();
 				if (what.equals("T")) {
@@ -70,10 +77,9 @@ public class Editor implements EventListener {
 					String titleToBeModified = whatToModify.nextLine();
 					article.setTitle(titleToBeModified);
 					System.out.println("Title modified!!! -- " + article.getTitle());
+					eventBus.post(new EventContainer(Action.MODIFY, article.getDomain(), article.getTitle()));
 				} else if (what.contentEquals("C")) {
 					whatToModify.close();
-					EventBus eventBus = EventBusManager.getInstance();
-					eventBus.post(new EventContainer(Action.MODIFY, article.getDomain(), article.getTitle()));
 					break;
 				}
 			}
